@@ -1,0 +1,20 @@
+# Mac System Files
+.DS_Store
+
+# Frontend Dependencies (Heavy!)
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Backend Dependencies (Heavy!)
+venv/
+__pycache__/
+*.pyc
+
+# Database (Local file shouldn't be shared usually)
+*.db
+*.sqlite3
+
+# Environment variables (Security)
+.env

@@ -1,10 +1,23 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, radius } from '../theme';
+import { colors, radius, toGradient } from '../theme';
+import { Product } from '../types';
 
-export default function ProductCard({ product, wishlisted, onToggleWishlist, onOpen }) {
+interface ProductCardProps {
+  product: Product;
+  wishlisted: boolean;
+  onToggleWishlist: (product: Product) => void;
+  onOpen: () => void;
+}
+
+export default function ProductCard({
+  product,
+  wishlisted,
+  onToggleWishlist,
+  onOpen,
+}: ProductCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onOpen} activeOpacity={0.9}>
       <LinearGradient colors={[colors.cardTop, colors.cardBottom]} style={styles.card}>
@@ -22,7 +35,7 @@ export default function ProductCard({ product, wishlisted, onToggleWishlist, onO
           />
         </TouchableOpacity>
 
-        <LinearGradient colors={product.colors || ['#333', '#444']} style={styles.image} />
+        <LinearGradient colors={toGradient(product.colors)} style={styles.image} />
 
         <View style={styles.meta}>
           <Text style={styles.name} numberOfLines={1}>

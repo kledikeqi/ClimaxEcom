@@ -1,3 +1,4 @@
+import os
 import random
 from datetime import datetime, timedelta
 from typing import List
@@ -5,6 +6,10 @@ from typing import List
 from sqlalchemy.orm import Session
 
 import models
+from auth import hash_password
+
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@climax.store")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "ClimaxAdmin1!")
 
 CATALOGUE = [
     {"name": "Cyber Hoodie (Black)", "category": "Hoodies", "price": "6,200 LEK",
@@ -59,7 +64,7 @@ ADDRESSES = [
     "Rr. Hoxha Tahsim, Durrës", "Llogara, Vlorë", "Rr. Bulevardi i Republikës, Shkodër",
 ]
 
-DEMO_ORDERS = 90
+DEMO_ORDERS = int(os.getenv("DEMO_ORDERS", "90"))
 DEMO_WINDOW_DAYS = 45
 
 
@@ -126,6 +131,22 @@ def seed_demo_orders(db: Session) -> None:
     print("✅ Demo order history seeded.")
 
 
+def seed_admin(db: Session) -> None:
+    """Role-based access demo account for POST /products (admin only).
+    Change ADMIN_PASSWORD via environment in any real deployment."""
+    if db.query(models.User).filter(models.User.email == ADMIN_EMAIL).first():
+        return
+    db.add(models.User(
+        email=ADMIN_EMAIL,
+        password_hash=hash_password(ADMIN_PASSWORD),
+        full_name="Climax Admin",
+        is_admin=True,
+    ))
+    db.commit()
+    print(f"✅ Admin account seeded ({ADMIN_EMAIL}).")
+
+
 def seed_all(db: Session) -> None:
+    seed_admin(db)
     seed_products(db)
     seed_demo_orders(db)

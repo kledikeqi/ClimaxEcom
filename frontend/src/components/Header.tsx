@@ -1,9 +1,23 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 
-export default function Header({ cartCount = 0, onMenuPress, onCartPress }) {
+interface HeaderProps {
+  cartCount?: number;
+  onMenuPress: () => void;
+  onCartPress: () => void;
+  onAccountPress: () => void;
+  accountActive?: boolean;
+}
+
+export default function Header({
+  cartCount = 0,
+  onMenuPress,
+  onCartPress,
+  onAccountPress,
+  accountActive = false,
+}: HeaderProps) {
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={onMenuPress} style={styles.iconButton} accessibilityLabel="Open menu">
@@ -12,14 +26,28 @@ export default function Header({ cartCount = 0, onMenuPress, onCartPress }) {
 
       <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
 
-      <TouchableOpacity style={styles.cartButton} onPress={onCartPress} accessibilityLabel="Open cart">
-        <Ionicons name="cart" size={28} color={colors.text} />
-        {cartCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{cartCount}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <View style={styles.right}>
+        <TouchableOpacity
+          onPress={onAccountPress}
+          style={styles.iconButton}
+          accessibilityLabel="Account"
+        >
+          <Ionicons
+            name={accountActive ? 'person' : 'person-outline'}
+            size={26}
+            color={accountActive ? colors.primary : colors.text}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.cartButton} onPress={onCartPress} accessibilityLabel="Open cart">
+          <Ionicons name="cart" size={28} color={colors.text} />
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -36,6 +64,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   iconButton: { padding: 5 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   logo: { width: 120, height: 40 },
   cartButton: { position: 'relative', padding: 5 },
   badge: {

@@ -1,9 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
+import { AppView } from '../types';
 
-const MENU_ITEMS = [
+const MENU_ITEMS: {
+  view: AppView;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+}[] = [
   { view: 'shop', icon: 'shirt-outline', label: 'SHOP COLLECTION' },
   { view: 'wishlist', icon: 'heart-outline', label: 'MY WISHLIST' },
   { view: 'dashboard', icon: 'stats-chart-outline', label: 'ANALYTICS' },
@@ -11,7 +16,21 @@ const MENU_ITEMS = [
   { view: 'contact', icon: 'call-outline', label: 'CONTACT US' },
 ];
 
-export default function MenuSidebar({ visible, currentView, onClose, onNavigate, onCart }) {
+interface MenuSidebarProps {
+  visible: boolean;
+  currentView: AppView;
+  onClose: () => void;
+  onNavigate: (view: AppView) => void;
+  onCart: () => void;
+}
+
+export default function MenuSidebar({
+  visible,
+  currentView,
+  onClose,
+  onNavigate,
+  onCart,
+}: MenuSidebarProps) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -72,5 +91,11 @@ const styles = StyleSheet.create({
   itemActive: { borderLeftColor: colors.primary, backgroundColor: 'rgba(211,47,47,0.08)' },
   itemIcon: { marginRight: 12 },
   itemLabel: { color: colors.text, fontSize: 15, fontWeight: 'bold', letterSpacing: 1 },
-  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, marginLeft: 'auto' },
+  activeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+    marginLeft: 'auto',
+  },
 });

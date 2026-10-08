@@ -2,8 +2,19 @@ import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import ProductCard from '../components/ProductCard';
 import { colors } from '../theme';
+import { Product } from '../types';
 
-export default function WishlistScreen({ wishlist, onToggleWishlist, onOpenProduct }) {
+interface WishlistScreenProps {
+  wishlist: Product[];
+  onToggleWishlist: (product: Product) => void;
+  onOpenProduct: (product: Product) => void;
+}
+
+export default function WishlistScreen({
+  wishlist,
+  onToggleWishlist,
+  onOpenProduct,
+}: WishlistScreenProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>MY WISHLIST ({wishlist.length})</Text>

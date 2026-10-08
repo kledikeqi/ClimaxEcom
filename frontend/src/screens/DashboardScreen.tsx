@@ -1,20 +1,53 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  fetchCategories,
+  fetchStockAlerts,
+  fetchSummary,
+  fetchTimeline,
+  fetchTopProducts,
+  ORDERS_CSV_URL,
+  PRODUCTS_CSV_URL,
+} from '../api';
 import BarChart from '../components/charts/BarChart';
 import ColumnChart from '../components/charts/ColumnChart';
 import StatCard from '../components/StatCard';
 import { ErrorView, LoadingView } from '../components/StateViews';
-import { fetchCategories, fetchStockAlerts, fetchSummary, fetchTimeline, fetchTopProducts, ORDERS_CSV_URL, PRODUCTS_CSV_URL } from '../api';
-import { colors, radius } from '../theme';
-import { formatCompact, formatGrowth, formatLek, formatNumber } from '../utils/format';
 import { useToast } from '../ToastContext';
+import { colors, radius } from '../theme';
+import {
+  CategoryStat,
+  LoadStatus,
+  StockAlert,
+  Summary,
+  TimelinePoint,
+  TopProduct,
+} from '../types';
+import { formatCompact, formatGrowth, formatLek, formatNumber } from '../utils/format';
 
-const EMPTY = { summary: null, timeline: [], categories: [], top: [], alerts: [] };
+interface DashboardState {
+  status: LoadStatus;
+  summary: Summary | null;
+  timeline: TimelinePoint[];
+  categories: CategoryStat[];
+  top: TopProduct[];
+  alerts: StockAlert[];
+}
+
+const EMPTY: Omit<DashboardState, 'status'> = {
+  summary: null,
+  timeline: [],
+  categories: [],
+  top: [],
+  alerts: [],
+};
+
+interface DashboardStateAction extends DashboardState {}
 
 export default function DashboardScreen() {
   const showToast = useToast();
-  const [state, setState] = useState({ status: 'loading', ...EMPTY });
+  const [state, setState] = useState<DashboardState>({ status: 'loading', ...EMPTY });
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -27,9 +60,16 @@ export default function DashboardScreen() {
         fetchTopProducts(5),
         fetchStockAlerts(),
       ]);
-      setState({ status: 'ready', summary, timeline: timeline.points, categories, top, alerts });
-    } catch (error) {
-      setState((previous) =>
+      setState({
+        status: 'ready',
+        summary,
+        timeline: timeline.points,
+        categories,
+        top,
+        alerts,
+      });
+    } catch {
+      setState((previous): DashboardStateAction =>
         previous.summary
           ? { ...previous, status: 'ready' }
           : { status: 'error', ...EMPTY }
@@ -42,11 +82,10 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
   if (state.status === 'loading') return <LoadingView label="Crunching the numbers..." />;
-  if (state.status === 'error') {
+  if (state.status === 'error' || !state.summary) {
     return (
       <ErrorView
         message="Analytics could not be loaded. Make sure the backend is running on port 8000."
@@ -70,18 +109,11 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.engineRow}>
-        <View style={styles.enginePill}>
-          <Text style={styles.engineText}>Python</Text>
-        </View>
-        <View style={styles.enginePill}>
-          <Text style={styles.engineText}>pandas</Text>
-        </View>
-        <View style={styles.enginePill}>
-          <Text style={styles.engineText}>FastAPI</Text>
-        </View>
-        <View style={styles.enginePill}>
-          <Text style={styles.engineText}>SQLite</Text>
-        </View>
+        {['Python', 'pandas', 'FastAPI', 'SQLAlchemy', 'Postgres'].map((label) => (
+          <View key={label} style={styles.enginePill}>
+            <Text style={styles.engineText}>{label}</Text>
+          </View>
+        ))}
       </View>
 
       {summary.has_demo_data && (
@@ -99,13 +131,21 @@ export default function DashboardScreen() {
           value={formatCompact(summary.total_revenue)}
           caption={formatLek(summary.total_revenue)}
         />
-        <StatCard label="Orders" value={formatNumber(summary.total_orders)} caption={`${summary.orders_last_7d} in the last 7 days`} />
+        <StatCard
+          label="Orders"
+          value={formatNumber(summary.total_orders)}
+          caption={`${summary.orders_last_7d} in the last 7 days`}
+        />
         <StatCard
           label="Avg. order"
           value={formatCompact(summary.average_order_value)}
           caption={formatLek(summary.average_order_value)}
         />
-        <StatCard label="Units sold" value={formatNumber(summary.units_sold)} caption={`${summary.unique_customers} customers`} />
+        <StatCard
+          label="Units sold"
+          value={formatNumber(summary.units_sold)}
+          caption={`${summary.unique_customers} customers`}
+        />
         <StatCard
           label="Revenue 7d"
           value={formatCompact(summary.revenue_last_7d)}
@@ -120,7 +160,12 @@ export default function DashboardScreen() {
         />
       </View>
 
-      <Section title="REVENUE — LAST 30 DAYS" meta={`${formatNumber(timeline.reduce((sum, point) => sum + point.revenue, 0))} LEK`}>
+      <Section
+        title="REVENUE — LAST 30 DAYS"
+        meta={`${formatNumber(
+          timeline.reduce((sum, point) => sum + point.revenue, 0)
+        )} LEK`}
+      >
         <ColumnChart
           points={timeline.map((point) => ({ label: point.date, value: point.revenue }))}
           formatValue={formatCompact}
@@ -157,7 +202,7 @@ export default function DashboardScreen() {
         ))}
       </Section>
 
-      <Section title="STOCK ALERTS" meta={`threshold ≤ 5`}>
+      <Section title="STOCK ALERTS" meta="threshold ≤ 5">
         {alerts.length === 0 ? (
           <Text style={styles.sectionEmpty}>All products are well stocked.</Text>
         ) : (
@@ -196,13 +241,22 @@ export default function DashboardScreen() {
       </Section>
 
       <Text style={styles.footer}>
-        Aggregated server-side with pandas · last generated {new Date(summary.generated_at).toLocaleString()}
+        Aggregated server-side with pandas · last generated{' '}
+        {new Date(summary.generated_at).toLocaleString()}
       </Text>
     </ScrollView>
   );
 }
 
-function Section({ title, meta, children }) {
+function Section({
+  title,
+  meta,
+  children,
+}: {
+  title: string;
+  meta?: string;
+  children: React.ReactNode;
+}) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -316,5 +370,11 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
   },
   exportText: { color: colors.text, fontWeight: '700', fontSize: 13 },
-  footer: { color: colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 22, lineHeight: 16 },
+  footer: {
+    color: colors.textMuted,
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 22,
+    lineHeight: 16,
+  },
 });

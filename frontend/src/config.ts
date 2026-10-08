@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 // `localhost` — it would point at the phone itself).
 const LAN_HOST = '192.168.1.6';
 
-function resolveHost() {
-  if (process.env.EXPO_PUBLIC_API_URL) return null;
+function resolveHost(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) return '';
   if (Platform.OS !== 'web') return LAN_HOST;
   if (typeof window === 'undefined' || !window.location) return 'localhost';
   const { hostname } = window.location;
@@ -16,4 +16,5 @@ function resolveHost() {
 
 const host = resolveHost();
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || `http://${host}:8000`;
+export const API_URL: string =
+  process.env.EXPO_PUBLIC_API_URL || `http://${host}:8000`;

@@ -1,13 +1,20 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { colors, radius } from '../theme';
 import { useToast } from '../ToastContext';
+import { colors, radius, toGradient } from '../theme';
+import { Product } from '../types';
 
-export default function ProductModal({ product, onClose, onAddToCart }) {
+interface ProductModalProps {
+  product: Product | null;
+  onClose: () => void;
+  onAddToCart: (product: Product, size: string) => void;
+}
+
+export default function ProductModal({ product, onClose, onAddToCart }: ProductModalProps) {
   const showToast = useToast();
-  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedSize(null);
@@ -18,7 +25,7 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
       showToast('Please select a size first.', 'error');
       return;
     }
-    onAddToCart(product, selectedSize);
+    onAddToCart(product as Product, selectedSize);
   };
 
   return (
@@ -31,7 +38,7 @@ export default function ProductModal({ product, onClose, onAddToCart }) {
                 <Ionicons name="close" size={28} color={colors.text} />
               </TouchableOpacity>
 
-              <LinearGradient colors={product.colors || ['#333', '#444']} style={styles.image} />
+              <LinearGradient colors={toGradient(product.colors)} style={styles.image} />
 
               <ScrollView style={styles.content}>
                 <Text style={styles.name}>{product.name}</Text>

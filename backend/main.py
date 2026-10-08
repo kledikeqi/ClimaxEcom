@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from analytics import router as analytics_router
+from auth import auth_router, get_current_user, require_admin
 from database import Base, SessionLocal, engine, get_db, run_migrations
+from payments import payments_router
 from seed import seed_all
 
 
@@ -38,6 +40,8 @@ app.add_middleware(
 )
 
 app.include_router(analytics_router)
+app.include_router(auth_router)
+app.include_router(payments_router)
 
 
 @app.get("/health")
@@ -51,7 +55,11 @@ def get_products(db: Session = Depends(get_db)) -> List[models.Product]:
 
 
 @app.post("/products", response_model=schemas.ProductSchema, status_code=201)
-def create_product(product: schemas.ProductCreateSchema, db: Session = Depends(get_db)) -> models.Product:
+def create_product(
+    product: schemas.ProductCreateSchema,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(require_admin),
+) -> models.Product:
     db_product = models.Product(**product.model_dump())
     db.add(db_product)
     db.commit()
@@ -60,7 +68,11 @@ def create_product(product: schemas.ProductCreateSchema, db: Session = Depends(g
 
 
 @app.post("/orders")
-def create_order(order: schemas.OrderCreateSchema, db: Session = Depends(get_db)) -> dict:
+def create_order(
+    order: schemas.OrderCreateSchema,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+) -> dict:
     if not order.items:
         raise HTTPException(status_code=400, detail="Order must contain at least one item")
     new_order = models.Order(
@@ -71,8 +83,24 @@ def create_order(order: schemas.OrderCreateSchema, db: Session = Depends(get_db)
         items=order.items,
         status="Confirmed",
         is_demo=False,
+        user_id=user.id,
+        payment_method="cod",
     )
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
     return {"status": "success", "order_id": new_order.id}
+
+
+@app.get("/orders/mine")
+def my_orders(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+) -> list:
+    orders = (
+        db.query(models.Order)
+        .filter(models.Order.user_id == user.id)
+        .order_by(models.Order.created_at.desc())
+        .all()
+    )
+    return [schemas.OrderSchema.model_validate(o).model_dump() for o in orders]

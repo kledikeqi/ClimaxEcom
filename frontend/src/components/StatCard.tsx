@@ -2,11 +2,22 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius } from '../theme';
 
-export default function StatCard({ label, value, caption, accent }) {
+interface StatCardProps {
+  label: string;
+  value: string;
+  caption?: string;
+  accent?: string;
+}
+
+export default function StatCard({ label, value, caption, accent }: StatCardProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, accent && { color: accent }]} numberOfLines={1} adjustsFontSizeToFit>
+      <Text
+        style={[styles.value, accent ? { color: accent } : null]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
         {value}
       </Text>
       {caption ? <Text style={styles.caption}>{caption}</Text> : null}

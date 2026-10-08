@@ -1,9 +1,21 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import ProductCard from '../components/ProductCard';
 import { ErrorView, LoadingView } from '../components/StateViews';
 import { colors } from '../theme';
+import { LoadStatus, Product } from '../types';
+
+interface ShopScreenProps {
+  status: LoadStatus;
+  products: Product[];
+  category: string;
+  onCategoryChange: (category: string) => void;
+  wishlist: Product[];
+  onToggleWishlist: (product: Product) => void;
+  onOpenProduct: (product: Product) => void;
+  onRetry: () => void;
+}
 
 export default function ShopScreen({
   status,
@@ -14,7 +26,7 @@ export default function ShopScreen({
   onToggleWishlist,
   onOpenProduct,
   onRetry,
-}) {
+}: ShopScreenProps) {
   const categories = useMemo(
     () => ['All', ...Array.from(new Set(products.map((product) => product.category)))],
     [products]
@@ -94,7 +106,13 @@ const styles = StyleSheet.create({
   heroTitle: { color: colors.text, fontSize: 30, fontWeight: '900', fontStyle: 'italic' },
   heroSubtitle: { color: colors.textSoft, marginTop: 6 },
   heroStats: { flexDirection: 'row', marginTop: 14 },
-  heroStat: { color: colors.textMuted, fontSize: 11, fontWeight: 'bold', letterSpacing: 1, marginRight: 6 },
+  heroStat: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginRight: 6,
+  },
   categoriesWrap: { backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: 12 },
   categories: { paddingHorizontal: 12 },
   category: {

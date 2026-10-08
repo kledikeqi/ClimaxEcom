@@ -2,11 +2,22 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius } from '../../theme';
 
-/**
- * Vertical column chart (dependency free).
- * points: [{ label, value }]
- */
-export default function ColumnChart({ points = [], height = 140, formatValue = (value) => String(value) }) {
+export interface ColumnPoint {
+  label: string;
+  value: number;
+}
+
+interface ColumnChartProps {
+  points?: ColumnPoint[];
+  height?: number;
+  formatValue?: (value: number) => string;
+}
+
+export default function ColumnChart({
+  points = [],
+  height = 140,
+  formatValue = (value) => String(value),
+}: ColumnChartProps) {
   if (!points.length) {
     return <Text style={styles.empty}>No data yet.</Text>;
   }

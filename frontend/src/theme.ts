@@ -14,9 +14,9 @@ export const colors = {
   success: '#2ECC71',
   warning: '#F1C40F',
   chartTrack: '#1C1C1F',
-};
+} as const;
 
-export const radius = { sm: 4, md: 10, lg: 12, pill: 20 };
+export const radius = { sm: 4, md: 10, lg: 12, pill: 20 } as const;
 
 export const shadows = {
   card: {
@@ -26,4 +26,16 @@ export const shadows = {
     shadowRadius: 6,
     elevation: 3,
   },
-};
+} as const;
+
+/**
+ * LinearGradient requires a tuple of at least two colours, while product data
+ * comes from the API as `string[]`. Normalise safely.
+ */
+export function toGradient(colorList?: string[]): [string, string, ...string[]] {
+  if (colorList && colorList.length >= 2) {
+    return [colorList[0], colorList[1], ...colorList.slice(2)];
+  }
+  return ['#333333', '#444444'];
+}
+

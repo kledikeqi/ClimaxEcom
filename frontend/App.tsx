@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { fetchProducts } from './src/api';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { AuthProvider, useAuth } from './src/AuthContext';
+import { fetchProducts, verifyPayment } from './src/api';
 import CartModal from './src/components/CartModal';
 import Header from './src/components/Header';
+import AuthModal from './src/components/AuthModal';
 import MenuSidebar from './src/components/MenuSidebar';
 import ProductModal from './src/components/ProductModal';
 import ContactScreen from './src/screens/ContactScreen';
@@ -13,26 +15,29 @@ import TeamScreen from './src/screens/TeamScreen';
 import WishlistScreen from './src/screens/WishlistScreen';
 import ToastProvider, { useToast } from './src/ToastContext';
 import { colors } from './src/theme';
+import { AppView, CartItem, Product, ProductState } from './src/types';
 
 function ClimaxApp() {
   const showToast = useToast();
+  const { user, initializing } = useAuth();
 
-  const [products, setProducts] = useState({ status: 'loading', data: [] });
+  const [products, setProducts] = useState<ProductState>({ status: 'loading', data: [] });
   const [category, setCategory] = useState('All');
-  const [wishlist, setWishlist] = useState([]);
-  const [cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
 
-  const [view, setView] = useState('shop');
+  const [view, setView] = useState<AppView>('shop');
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const loadProducts = useCallback(async () => {
     setProducts((previous) => ({ ...previous, status: 'loading' }));
     try {
       const data = await fetchProducts();
       setProducts({ status: 'ready', data });
-    } catch (error) {
+    } catch {
       setProducts({ status: 'error', data: [] });
     }
   }, []);
@@ -41,12 +46,46 @@ function ClimaxApp() {
     loadProducts();
   }, [loadProducts]);
 
-  const navigateTo = (nextView) => {
+  // Stripe Checkout redirects back with ?session_id=... — confirm the payment.
+  useEffect(() => {
+    if (initializing) return;
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+
+    verifyPayment(sessionId)
+      .then((result) =>
+        showToast(
+          result.paid
+            ? `Payment confirmed — order #${result.order_id}.`
+            : 'Stripe reported the payment as incomplete.',
+          result.paid ? 'info' : 'error'
+        )
+      )
+      .catch((error: unknown) =>
+        showToast(
+          error instanceof Error ? error.message : 'Could not verify the payment.',
+          'error'
+        )
+      )
+      .finally(() => {
+        params.delete('session_id');
+        const query = params.toString();
+        window.history.replaceState(
+          {},
+          '',
+          `${window.location.pathname}${query ? `?${query}` : ''}`
+        );
+      });
+  }, [initializing, showToast]);
+
+  const navigateTo = (nextView: AppView) => {
     setView(nextView);
     setMenuOpen(false);
   };
 
-  const toggleWishlist = (product) => {
+  const toggleWishlist = (product: Product) => {
     setWishlist((previous) => {
       const exists = previous.find((entry) => entry.id === product.id);
       return exists
@@ -54,13 +93,17 @@ function ClimaxApp() {
         : [...previous, product];
     });
     showToast(
-      wishlist.find((entry) => entry.id === product.id) ? 'Removed from wishlist.' : 'Saved to wishlist.'
+      wishlist.find((entry) => entry.id === product.id)
+        ? 'Removed from wishlist.'
+        : 'Saved to wishlist.'
     );
   };
 
-  const addToCart = (product, size) => {
+  const addToCart = (product: Product, size: string) => {
     setCart((previous) => {
-      const existing = previous.find((item) => item.id === product.id && item.selectedSize === size);
+      const existing = previous.find(
+        (item) => item.id === product.id && item.selectedSize === size
+      );
       if (existing) {
         return previous.map((item) =>
           item === existing ? { ...item, qty: (item.qty || 1) + 1 } : item
@@ -82,6 +125,8 @@ function ClimaxApp() {
           cartCount={cart.reduce((sum, item) => sum + (item.qty || 1), 0)}
           onMenuPress={() => setMenuOpen(true)}
           onCartPress={() => setCartOpen(true)}
+          onAccountPress={() => setAuthOpen(true)}
+          accountActive={Boolean(user)}
         />
 
         <View style={styles.content}>
@@ -126,7 +171,10 @@ function ClimaxApp() {
         onClose={() => setCartOpen(false)}
         cart={cart}
         onCartChange={setCart}
+        onAuthRequired={() => setAuthOpen(true)}
       />
+
+      <AuthModal visible={authOpen} onClose={() => setAuthOpen(false)} />
 
       <ProductModal
         product={selectedProduct}
@@ -140,7 +188,9 @@ function ClimaxApp() {
 export default function App() {
   return (
     <ToastProvider>
-      <ClimaxApp />
+      <AuthProvider>
+        <ClimaxApp />
+      </AuthProvider>
     </ToastProvider>
   );
 }

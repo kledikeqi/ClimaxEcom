@@ -2,11 +2,18 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius } from '../../theme';
 
-/**
- * Horizontal bar chart (dependency free).
- * data: [{ label, value, caption }]
- */
-export default function BarChart({ data = [], formatValue = (value) => String(value) }) {
+export interface BarDatum {
+  label: string;
+  value: number;
+  caption?: string;
+}
+
+interface BarChartProps {
+  data?: BarDatum[];
+  formatValue?: (value: number) => string;
+}
+
+export default function BarChart({ data = [], formatValue = (value) => String(value) }: BarChartProps) {
   const max = Math.max(...data.map((row) => row.value), 1);
 
   if (!data.length) {

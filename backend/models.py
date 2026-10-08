@@ -5,6 +5,17 @@ from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String
 from database import Base
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    full_name = Column(String, default="")
+    is_admin = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Product(Base):
     __tablename__ = "products"
 
@@ -28,6 +39,9 @@ class Order(Base):
     phone = Column(String)
     total_price = Column(Integer)
     items = Column(JSON)  # cart payload: list of item dicts
-    status = Column(String, default="Pending")  # Pending, Confirmed, Shipped, Delivered
+    status = Column(String, default="Pending")  # Awaiting payment, Paid, Confirmed, Shipped, Delivered
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     is_demo = Column(Boolean, default=False, nullable=False)
+    user_id = Column(Integer, nullable=True, index=True)
+    payment_method = Column(String, nullable=True)  # cod, demo, stripe
+    stripe_session_id = Column(String, nullable=True, index=True)

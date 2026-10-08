@@ -1,15 +1,31 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { colors, radius } from './theme';
 
-const ToastContext = createContext(() => {});
+export type ToastType = 'info' | 'error';
+export type ToastFn = (message: string, type?: ToastType) => void;
 
-export const useToast = () => useContext(ToastContext);
+const ToastContext = createContext<ToastFn>(() => {});
 
-export default function ToastProvider({ children }) {
-  const [toast, setToast] = useState(null);
+export const useToast = (): ToastFn => useContext(ToastContext);
+
+interface ToastState {
+  message: string;
+  type: ToastType;
+}
+
+export default function ToastProvider({ children }: { children: ReactNode }) {
+  const [toast, setToast] = useState<ToastState | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
-  const hideTimer = useRef(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hide = useCallback(() => {
     Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: false }).start(() =>
@@ -17,7 +33,7 @@ export default function ToastProvider({ children }) {
     );
   }, [opacity]);
 
-  const show = useCallback(
+  const show = useCallback<ToastFn>(
     (message, type = 'info') => {
       setToast({ message, type });
       opacity.setValue(0);
@@ -28,7 +44,12 @@ export default function ToastProvider({ children }) {
     [hide, opacity]
   );
 
-  useEffect(() => () => hideTimer.current && clearTimeout(hideTimer.current), []);
+  useEffect(
+    () => () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    },
+    []
+  );
 
   const accent = toast?.type === 'error' ? colors.warning : colors.primary;
 
@@ -36,7 +57,10 @@ export default function ToastProvider({ children }) {
     <ToastContext.Provider value={show}>
       {children}
       {toast && (
-        <Animated.View style={[styles.toast, { opacity, borderLeftColor: accent }]} pointerEvents="none">
+        <Animated.View
+          style={[styles.toast, { opacity, borderLeftColor: accent }]}
+          pointerEvents="none"
+        >
           <Text style={styles.message}>{toast.message}</Text>
         </Animated.View>
       )}

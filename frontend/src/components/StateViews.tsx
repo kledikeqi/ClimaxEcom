@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { colors, radius } from '../theme';
 
-export function LoadingView({ label = 'Loading...' }) {
+export function LoadingView({ label = 'Loading...' }: { label?: string }) {
   return (
     <View style={styles.center}>
       <ActivityIndicator size="large" color={colors.primary} />
@@ -12,7 +12,13 @@ export function LoadingView({ label = 'Loading...' }) {
   );
 }
 
-export function ErrorView({ message, onRetry }) {
+export function ErrorView({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
   return (
     <View style={styles.center}>
       <Ionicons name="cloud-offline-outline" size={42} color={colors.primary} />

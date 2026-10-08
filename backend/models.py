@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, String, JSON
+from datetime import datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String
+
 from database import Base
 
 
@@ -7,13 +10,13 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    category = Column(String)
+    category = Column(String, index=True)
     price = Column(String)
     description = Column(String)
     colors = Column(JSON)
     badge = Column(String, nullable=True)
     stock = Column(Integer, default=10)
-    sizes = Column(JSON, default=["S", "M", "L"])
+    sizes = Column(JSON, default=["S", "M", "XL"])
 
 
 class Order(Base):
@@ -24,6 +27,7 @@ class Order(Base):
     address = Column(String)
     phone = Column(String)
     total_price = Column(Integer)
-    items = Column(JSON)  # we save the cart items as a list
-    #  Pending, Shipped, Delivered
-    status = Column(String, default="Pending")
+    items = Column(JSON)  # cart payload: list of item dicts
+    status = Column(String, default="Pending")  # Pending, Confirmed, Shipped, Delivered
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    is_demo = Column(Boolean, default=False, nullable=False)
